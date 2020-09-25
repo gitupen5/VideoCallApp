@@ -41,6 +41,7 @@ public class MainActivity extends AppCompatActivity {
     private FirebaseAuth mAuth;
     private String currentUserId;
     private String userName="", profileImage="";
+    private String calledBy="";
 
 
 
@@ -107,6 +108,11 @@ public class MainActivity extends AppCompatActivity {
     protected void onStart() {
         super.onStart();
 
+        checkForReceivingCall();
+
+        //Validation.. When a user open the app then he will have to enter his info.
+        validateUser();
+
         FirebaseRecyclerOptions<Contacts> options
                 = new FirebaseRecyclerOptions.Builder<Contacts>().setQuery(contactsRef.child(currentUserId),Contacts.class).build();
 
@@ -128,6 +134,15 @@ public class MainActivity extends AppCompatActivity {
 
 
                         }
+                        holder.callBtn.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                Intent callingIntent = new Intent(MainActivity.this, CallingActivity.class);
+                                callingIntent.putExtra("visit_user_id", listUserId);
+                                startActivity(callingIntent);
+
+                            }
+                        });
                     }
 
                     @Override
@@ -151,6 +166,8 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
+
+
     public static class ContactsViewHolder extends RecyclerView.ViewHolder {
 
         TextView userNameTxt;
@@ -166,6 +183,50 @@ public class MainActivity extends AppCompatActivity {
             profileImageView = itemView.findViewById(R.id.image_contact);
 
         }
+    }
+    private void validateUser(){
+        DatabaseReference reference = FirebaseDatabase.getInstance().getReference();
+        reference.child("Users").child(currentUserId).addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                //if this exist means user has filled his info like profile pic, name and bio
+                if(!dataSnapshot.exists()){
+                    //allowing a new user to fill his info first.
+                    Intent settingIntent = new Intent(MainActivity.this, SettingsActivity.class);
+                    startActivity(settingIntent);
+                    finish();
+                }
+
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
+    }
+
+    private void checkForReceivingCall() {
+
+        userRef.child(currentUserId).child("Ringing")
+                .addValueEventListener(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(DataSnapshot dataSnapshot) {
+                        if(dataSnapshot.hasChild("Ringing")){
+                            calledBy = dataSnapshot.child("Ringing").getValue().toString();
+
+                            Intent callingIntent = new Intent(MainActivity.this, CallingActivity.class);
+                            callingIntent.putExtra("visit_user_id", calledBy);
+                            startActivity(callingIntent);
+                        }
+                    }
+
+                    @Override
+                    public void onCancelled(DatabaseError databaseError) {
+
+                    }
+                });
+
     }
 
 }
