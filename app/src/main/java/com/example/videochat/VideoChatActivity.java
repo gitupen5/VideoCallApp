@@ -30,9 +30,9 @@ import com.opentok.android.Subscriber;
 public class VideoChatActivity extends AppCompatActivity
         implements Session.SessionListener, PublisherKit.PublisherListener {
 
-    private static String API_Key = "";
-    private static String SESSION_ID = "";
-    private static String TOKEN = "";
+    private static String API_Key = "46933564";
+    private static String SESSION_ID = "2_MX40NjkzMzU2NH5-MTYwMTEzNTEzNTE1NH5XcGVuUVVkdU9OdDdoS1JRaDFaZkdUUkl-fg";
+    private static String TOKEN = "T1==cGFydG5lcl9pZD00NjkzMzU2NCZzaWc9ZjJhODY3Mzg2NWUzMjgwMmNmZDE4YzJiYjNiM2UzNDYzNDhmY2JjNDpzZXNzaW9uX2lkPTJfTVg0ME5qa3pNelUyTkg1LU1UWXdNVEV6TlRFek5URTFOSDVYY0dWdVVWVmtkVTlPZERkb1MxSlJhREZhWmtkVVVrbC1mZyZjcmVhdGVfdGltZT0xNjAxMTM1MjAyJm5vbmNlPTAuNjExNzA1MzM1MDk5NjEyNCZyb2xlPXB1Ymxpc2hlciZleHBpcmVfdGltZT0xNjAzNzI3MjA3JmluaXRpYWxfbGF5b3V0X2NsYXNzX2xpc3Q9";
     private static final String LOG_TAG = VideoChatActivity.class.getSimpleName();
     private static final int RC_VIDEO_APP_PERM = 124;
 
@@ -42,15 +42,10 @@ public class VideoChatActivity extends AppCompatActivity
     private Publisher mPublisher;
     private Subscriber mSubscriber;
 
-
-
     private ImageView closeVideoChatBtn;
-
 
     private DatabaseReference userRef;
     private String userID="";
-
-
 
 
 
@@ -63,25 +58,22 @@ public class VideoChatActivity extends AppCompatActivity
         userID = FirebaseAuth.getInstance().getCurrentUser().getUid();
         userRef = FirebaseDatabase.getInstance().getReference().child("Users");
 
-
         closeVideoChatBtn = findViewById(R.id.close_video_chat_btn);
-
         closeVideoChatBtn.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
                 userRef.addValueEventListener(new ValueEventListener() {
                     @Override
                     public void onDataChange(DataSnapshot dataSnapshot) {
+
                         if(dataSnapshot.child(userID).hasChild("Ringing")){
                             userRef.child(userID).child("Ringing").removeValue();
-
                             if(mPublisher != null){
                                 mPublisher.destroy();
                             }
                             if(mSubscriber != null){
                                 mSubscriber.destroy();
                             }
-
                             startActivity(new Intent(VideoChatActivity.this, RegistrationActivity.class));
                             finish();
                         }
@@ -99,7 +91,6 @@ public class VideoChatActivity extends AppCompatActivity
                             finish();
                         }
                         else{
-
                             if(mPublisher != null){
                                 mPublisher.destroy();
                             }
@@ -111,7 +102,6 @@ public class VideoChatActivity extends AppCompatActivity
                             finish();
                         }
                     }
-
                     @Override
                     public void onCancelled(DatabaseError databaseError) {
 
@@ -119,6 +109,8 @@ public class VideoChatActivity extends AppCompatActivity
                 });
             }
         });
+
+        requestPermissions();
     }
 
     @Override
@@ -144,7 +136,7 @@ public class VideoChatActivity extends AppCompatActivity
             mSession.connect(TOKEN);
         }
         else{
-            EasyPermissions.requestPermissions(this, "Chupchap Permission allow kar Verna Call Nahi Hogi. ", RC_VIDEO_APP_PERM, perm);
+            EasyPermissions.requestPermissions(this, "Please allow Permissions.", RC_VIDEO_APP_PERM, perm);
         }
     }
 
@@ -173,12 +165,10 @@ public class VideoChatActivity extends AppCompatActivity
         mPublisherViewController.addView(mPublisher.getView());
 
         if(mPublisher.getView() instanceof GLSurfaceView){
-            ((GLSurfaceView)  mPublisher.getView()).setZOrderOnTop(true);)
+            ((GLSurfaceView)  mPublisher.getView()).setZOrderOnTop(true);
         }
 
         mSession.publish(mPublisher);
-
-
     }
 
     @Override
