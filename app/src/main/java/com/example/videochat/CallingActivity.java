@@ -3,8 +3,10 @@ package com.example.videochat;
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 
+import android.content.Intent;
 import android.media.Image;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.TextView;
@@ -25,10 +27,11 @@ public class CallingActivity extends AppCompatActivity {
 
     private TextView nameContact;
     private ImageView profileImage;
-    private ImageView cancelCallBtn, makeCallBtn;
+    private ImageView cancelCallBtn, acceptCallBtn;
 
     private String receiverUserId="", receiverUserImage="", receiverUserName="";
-    private String senderUserId="", senderUserImage="", senderUserName="";
+    private String senderUserId="", senderUserImage="", senderUserName="", checker="";
+    private String callingID="", ringingID="";
 
     private DatabaseReference userRef;
 
@@ -48,7 +51,16 @@ public class CallingActivity extends AppCompatActivity {
         nameContact = findViewById(R.id.name_calling);
         profileImage = findViewById(R.id.profile_image_calling);
         cancelCallBtn = findViewById(R.id.cancel_call);
-        makeCallBtn = findViewById(R.id.make_call);
+        acceptCallBtn = findViewById(R.id.make_call);
+
+        cancelCallBtn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                checker = "clicked";
+
+                cancelCallingUser();
+            }
+        });
 
         getAndSetUserProfileInfo();
         
@@ -82,7 +94,7 @@ public class CallingActivity extends AppCompatActivity {
 
     }
 
-    //lettig the receiver kow that someone is calling..
+    //letting the receiver kow that someone is calling..
     @Override
     protected void onStart() {
         super.onStart();
@@ -91,8 +103,9 @@ public class CallingActivity extends AppCompatActivity {
         userRef.child(receiverUserId).addListenerForSingleValueEvent(new ValueEventListener() {
             @Override
             public void onDataChange(DataSnapshot dataSnapshot) {
-                //lettig the receiver kow that someone is calling..
-                if(!dataSnapshot.hasChild("Calling") && !dataSnapshot.hasChild("Ringing") ){
+                //letting the receiver kow that someone is calling..
+                if( !checker.equals("clicked") && !dataSnapshot.hasChild("Calling") && !dataSnapshot.hasChild("Ringing") ){
+                    //this code will note run if user clicked on cancel button.
                     final HashMap<String,Object> callingInfo = new HashMap<>();
                     callingInfo.put("calling",receiverUserId);
 
@@ -119,5 +132,106 @@ public class CallingActivity extends AppCompatActivity {
 
             }
         });
+
+        userRef.addValueEventListener(new ValueEventListener() {
+            @Override
+            public void onDataChange(DataSnapshot dataSnapshot) {
+                if(dataSnapshot.child(senderUserId).hasChild("Ringing") && !dataSnapshot.child(senderUserId).hasChild("Calling")){
+                    acceptCallBtn.setVisibility(View.VISIBLE);
+                }
+            }
+
+            @Override
+            public void onCancelled(DatabaseError databaseError) {
+
+            }
+        });
+    }
+    private void cancelCallingUser(){
+
+        //Cancel call from sender side
+        userRef.child(senderUserId).child("Calling")
+                .addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(DataSnapshot dataSnapshot) {
+                        if(dataSnapshot.exists() && dataSnapshot.hasChild("calling")){
+                             callingID = dataSnapshot.child("calling").getValue().toString();
+
+                             userRef.child(callingID).child("Ringing").removeValue()
+                                     .addOnCompleteListener(new OnCompleteListener<Void>() {
+                                         @Override
+                                         public void onComplete(@NonNull Task<Void> task) {
+                                            //deleting node after calling
+                                            if(task.isSuccessful()){
+                                                userRef.child(senderUserId).child("Calling")
+                                                        .removeValue().addOnCompleteListener(new OnCompleteListener<Void>() {
+                                                    @Override
+                                                    public void onComplete(@NonNull Task<Void> task) {
+                                                        //Sending user back to register Activity so if the user logged in it will
+                                                        //automatically send to contacts activity
+                                                        startActivity(new Intent(CallingActivity.this, RegistrationActivity.class));
+                                                        finish();
+
+                                                    }
+                                                });
+                                            }
+                                            else{
+                                                startActivity(new Intent(CallingActivity.this, RegistrationActivity.class));
+                                                finish();
+                                            }
+                                         }
+                                     });
+
+                        }
+                    }
+
+                    @Override
+                    public void onCancelled(DatabaseError databaseError) {
+
+                    }
+                });
+
+
+        //Cancel call from receiver side.
+        userRef.child(senderUserId).child("Ringing")
+                .addListenerForSingleValueEvent(new ValueEventListener() {
+                    @Override
+                    public void onDataChange(DataSnapshot dataSnapshot) {
+                        if(dataSnapshot.exists() && dataSnapshot.hasChild("ringing")){
+                            ringingID = dataSnapshot.child("ringing").getValue().toString();
+
+                            userRef.child(callingID).child("Calling").removeValue()
+                                    .addOnCompleteListener(new OnCompleteListener<Void>() {
+                                        @Override
+                                        public void onComplete(@NonNull Task<Void> task) {
+                                            //deleting node after calling
+                                            if(task.isSuccessful()){
+                                                userRef.child(senderUserId).child("Ringing")
+                                                        .removeValue().addOnCompleteListener(new OnCompleteListener<Void>() {
+                                                    @Override
+                                                    public void onComplete(@NonNull Task<Void> task) {
+                                                        //Sending user back to register Activity so if the user logged in it will
+                                                        //automatically send to contacts activity
+                                                        startActivity(new Intent(CallingActivity.this, RegistrationActivity.class));
+                                                        finish();
+
+                                                    }
+                                                });
+                                            }
+                                            else{
+                                                startActivity(new Intent(CallingActivity.this, RegistrationActivity.class));
+                                                finish();
+                                            }
+                                        }
+                                    });
+
+                        }
+                    }
+
+                    @Override
+                    public void onCancelled(DatabaseError databaseError) {
+
+                    }
+                });
     }
 }
